@@ -1,40 +1,50 @@
-import { useEffect } from 'react';
-import { Order } from '../../types/Order';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { useEffect } from "react";
+import { Order } from "../../types/Order";
+import { formatCurrency } from "../../utils/formatCurrency";
 
-import closeIcon from '../../assets/images/close-icon.svg';
+import closeIcon from "../../assets/images/close-icon.svg";
 
-import { Overlay, ModalBody, OrderDetails, Actions } from './styles';
+import { Overlay, ModalBody, OrderDetails, Actions } from "./styles";
 
 interface OrderModalProps {
   visible: boolean;
   order: Order | null;
   onClose: () => void;
+  onCancelOrder: () => Promise<void>;
+  onChangeOrderStatus: () => Promise<void>;
+  isLoading: boolean;
 }
 
-export function OrderModal({ visible, order, onClose }: OrderModalProps) {
+export function OrderModal({
+  visible,
+  order,
+  onClose,
+  onCancelOrder,
+  onChangeOrderStatus,
+  isLoading,
+}: OrderModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if(event.key === 'Escape') {
+      if (event.key === "Escape") {
         onClose();
       }
     }
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [onClose])
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
-  if(!visible || !order) {
+  if (!visible || !order) {
     return null;
   }
 
   const total = order.products.reduce((total, { product, quantity }) => {
-    return total + (product.price * quantity);
+    return total + product.price * quantity;
   }, 0);
 
-  return(
+  return (
     <Overlay>
       <ModalBody>
         <header>
@@ -49,14 +59,14 @@ export function OrderModal({ visible, order, onClose }: OrderModalProps) {
           <small>Status do Pedido</small>
           <div>
             <span>
-              {order.status === 'WAITING' && '🕑'}
-              {order.status === 'IN_PRODUCTION' && '🧑‍🍳'}
-              {order.status === 'DONE' && '✅'}
+              {order.status === "WAITING" && "🕑"}
+              {order.status === "IN_PRODUCTION" && "🧑‍🍳"}
+              {order.status === "DONE" && "✅"}
             </span>
             <strong>
-              {order.status === 'WAITING' && 'Fila de espera'}
-              {order.status === 'IN_PRODUCTION' && 'Em preparação'}
-              {order.status === 'DONE' && 'Pronto'}
+              {order.status === "WAITING" && "Fila de espera"}
+              {order.status === "IN_PRODUCTION" && "Em preparação"}
+              {order.status === "DONE" && "Pronto"}
             </strong>
           </div>
         </div>
@@ -65,7 +75,7 @@ export function OrderModal({ visible, order, onClose }: OrderModalProps) {
           <strong>Itens</strong>
 
           <div className="order-items">
-            {order.products.map(({_id, product, quantity}) => (
+            {order.products.map(({ _id, product, quantity }) => (
               <div className="item" key={_id}>
                 <img
                   src={`http://localhost:3001/uploads/${product.imagePath}`}
@@ -91,15 +101,33 @@ export function OrderModal({ visible, order, onClose }: OrderModalProps) {
         </OrderDetails>
 
         <Actions>
-          <button type="button" className="primary">
-            <span>🧑‍🍳</span>
-            <strong>Iniciar Produção</strong>
-          </button>
-          <button type="button" className="secondary">
+          {order.status !== "DONE" && (
+            <button
+              type="button"
+              className="primary"
+              disabled={isLoading}
+              onClick={onChangeOrderStatus}
+            >
+              <span>
+                {order.status === "WAITING" && "🧑‍🍳"}
+                {order.status === "IN_PRODUCTION" && "✅"}
+              </span>
+              <strong>
+                {order.status === "WAITING" && "Iniciar Produção"}
+                {order.status === "IN_PRODUCTION" && "Concluir Pedido"}
+              </strong>
+            </button>
+          )}
+          <button
+            type="button"
+            className="secondary"
+            disabled={isLoading}
+            onClick={onCancelOrder}
+          >
             Cancelar Pedido
           </button>
         </Actions>
       </ModalBody>
     </Overlay>
-  )
+  );
 }
